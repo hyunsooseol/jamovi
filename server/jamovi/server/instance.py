@@ -505,7 +505,7 @@ class Instance:
                 address = b64decode(address).decode('utf-8')
 
                 fd, temp_file_path = mkstemp(suffix=ext)
-                temp_file = os.fdopen(fd, 'rb')
+                temp_file_path = temp_file_path.replace('\\', '/')
 
                 analysis = self.analyses.get(id)
                 await analysis.save(temp_file_path, address)
