@@ -9,7 +9,7 @@ from io import TextIOWrapper
 from time import localtime
 
 
-def latexify(content, out):
+async def latexify(content, out, resolve_image):
 
     f_fn = 'article'
     r_fn = 'article'
@@ -199,7 +199,8 @@ def latexify(content, out):
         idta = []
         if re.search('<img src', body) != None:
             idta = re.compile('<img src=".*?>').findall(body)
-            for i in range(len(idta)):
+            n_idta = len(idta)
+            for i in range(n_idta):
                 iraw = re.compile('img src="data:\w+\/\w+;base64,(\S+)"').findall(idta[i])
                 if len(iraw) == 1:
                     i_fn = r_fn.replace('.html', '_' + str(i + 1) + '.png')
@@ -209,14 +210,21 @@ def latexify(content, out):
                         f.close()
                 elif len(iraw) == 0:
                     i_fp = re.compile('img src="(.+?)" data-address=".*?"').findall(idta[i])[0]
-                    i_fn = re.compile('img src=".*?" data-address="(.+?)"').findall(idta[i])[0].replace('==', '')
+                    i_fn = re.compile('img src=".*?" data-address="(.+?)"').findall(idta[i])[0]
                     # check for file existence and throw error if not
                     #if os.path.isfile(f_fn.replace(r_fn, i_fn)) == False:
                     #    raise ValueError('Graphics file included in HTML doesn\'t exist: {}'.format(i_fn))
                 else:
                     raise ValueError('Unexpected amount of figure data (' + str(len(iraw)) + ' instead of 1 [for base64-embedded pictures] or 0 [for picture links]):\n' + '\n'.join(iraw))
 
-                i_fn = 'Figure_{}|{}'.format(i + 1, i_fn)
+                yield (i, n_idta)  # progress
+
+                image_path = await resolve_image(i_fn)
+                name, ext = os.path.splitext(image_path)
+
+                i_fn = f'Figure_{ i + 1 }{ ext }'
+                z.write(image_path, i_fn)
+
                 irpl = ('\n\\begin{figure}[htbp]\n\\caption{PLACEHOLDER}\n\\label{fig:Figure_' + str(i + 1) + '}\n' +
                         '% (the following arrangement follows APA7; if you want to use APA6, the caption- and label-lines have to be moved to after the includegraphics-line)\n' +
                         '\\centering\n\\includegraphics[max size={\\columnwidth}{\\textheight}]{'  + i_fn + '}\n\\end{figure}')
