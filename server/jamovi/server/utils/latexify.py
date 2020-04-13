@@ -282,7 +282,7 @@ async def latexify(content, out, resolve_image):
             if len(rref) > 0:
                 zi = ZipInfo(f_fn.replace('.html', '.bib'), now)
                 with z.open(zi, 'w') as f:
-                    f.write(rbib)
+                    f.write(rbib.encode('utf-8'))
                     f.close()
                 if ('jamovi' in rkey) & ('R' in rkey):
                     rkey.remove('jamovi')
